@@ -1,0 +1,158 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: canchas_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: canchas_user
+      POSTGRES_PASSWORD: canchas_pass
+      POSTGRES_DB: canchas_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - canchas_pgdata:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    networks:
+      - canchas_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U canchas_user -d canchas_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api-usuarios:
+    build: ./api-usuarios
+    container_name: canchas_api_usuarios
+    restart: unless-stopped
+    environment:
+      PORT: 3001
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_SSL: ${DATABASE_SSL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: 24h
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      NODE_ENV: development
+      TURNOS_URL: http://api-turnos:3003
+    ports:
+      - "3001:3001"
+    networks:
+      - canchas_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api-canchas:
+    build: ./api-canchas
+    container_name: canchas_api_canchas
+    restart: unless-stopped
+    environment:
+      PORT: 3002
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_SSL: ${DATABASE_SSL}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      NODE_ENV: development
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL}
+    ports:
+      - "3002:3002"
+    networks:
+      - canchas_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api-turnos:
+    build: ./api-turnos
+    container_name: canchas_api_turnos
+    restart: unless-stopped
+    environment:
+      PORT: 3003
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_SSL: ${DATABASE_SSL}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      NODE_ENV: development
+      USUARIOS_URL: http://api-usuarios:3001
+      CANCHAS_URL: http://api-canchas:3002
+      SENA_PORCENTAJE_DEFAULT: 30
+      HORAS_ANTICIPACION_MIN: 2
+      DURACION_MAXIMA_HORAS: 3
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL}
+    ports:
+      - "3003:3003"
+    networks:
+      - canchas_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api-usuarios:
+        condition: service_started
+      api-canchas:
+        condition: service_started
+
+  api-pagos:
+    build: ./api-pagos
+    container_name: canchas_api_pagos
+    restart: unless-stopped
+    environment:
+      PORT: 3004
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_SSL: ${DATABASE_SSL}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      NODE_ENV: development
+      TURNOS_URL: http://api-turnos:3003
+    ports:
+      - "3004:3004"
+    networks:
+      - canchas_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api-turnos:
+        condition: service_started
+
+  gateway:
+    build: ./gateway
+    container_name: canchas_gateway
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      NODE_ENV: development
+      USUARIOS_URL: http://api-usuarios:3001
+      CANCHAS_URL: http://api-canchas:3002
+      TURNOS_URL: http://api-turnos:3003
+      PAGOS_URL: http://api-pagos:3004
+    ports:
+      - "3000:3000"
+    networks:
+      - canchas_net
+    depends_on:
+      - api-usuarios
+      - api-canchas
+      - api-turnos
+      - api-pagos
+
+  frontend:
+    build:
+      context: ./ppp3-canchas
+      args:
+        # URL del gateway embebida en el bundle (el navegador la consume vía CORS)
+        VITE_API_URL: http://localhost:3000
+    container_name: canchas_frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    networks:
+      - canchas_net
+    depends_on:
+      - gateway
+
+networks:
+  canchas_net:
+    driver: bridge
+
+volumes:
+  canchas_pgdata:

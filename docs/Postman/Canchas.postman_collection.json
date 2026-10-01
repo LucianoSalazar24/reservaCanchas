@@ -1,0 +1,424 @@
+{
+  "info": {
+    "name": "Sistema de Reservas de Canchas",
+    "description": "Colección completa de endpoints (vía gateway). Ver docs/POSTMAN.md. Las requests de login/registro y las de creación guardan automáticamente las variables de entorno (token, clienteId, canchaId, reservaId).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST registro (publico)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "if (j.access_token) pm.environment.set('token', j.access_token);",
+                  "if (j.usuario && j.usuario.cliente_id) pm.environment.set('clienteId', j.usuario.cliente_id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/registro", "host": ["{{baseUrl}}"], "path": ["auth", "registro"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"juan@test.com\",\n  \"password\": \"Test1234\",\n  \"nombre\": \"Juan\",\n  \"apellido\": \"Perez\",\n  \"telefono\": \"3815551234\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST login (publico)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "if (j.access_token) pm.environment.set('token', j.access_token);",
+                  "if (j.usuario && j.usuario.cliente_id) pm.environment.set('clienteId', j.usuario.cliente_id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@canchas.com\",\n  \"password\": \"Admin123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clientes",
+      "item": [
+        {
+          "name": "GET clientes (busqueda/limite)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/clientes?busqueda=&limite=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["clientes"],
+              "query": [
+                { "key": "busqueda", "value": "" },
+                { "key": "limite", "value": "50" },
+                { "key": "telefono", "value": "", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET cliente por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/clientes/{{clienteId}}", "host": ["{{baseUrl}}"], "path": ["clientes", "{{clienteId}}"] }
+          }
+        },
+        {
+          "name": "GET cliente descuento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/clientes/{{clienteId}}/descuento", "host": ["{{baseUrl}}"], "path": ["clientes", "{{clienteId}}", "descuento"] }
+          }
+        },
+        {
+          "name": "GET cliente estadisticas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/clientes/{{clienteId}}/estadisticas", "host": ["{{baseUrl}}"], "path": ["clientes", "{{clienteId}}", "estadisticas"] }
+          }
+        },
+        {
+          "name": "POST crear cliente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "if (j.id) pm.environment.set('clienteId', j.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/clientes", "host": ["{{baseUrl}}"], "path": ["clientes"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Maria\",\n  \"apellido\": \"Gomez\",\n  \"telefono\": \"3814440000\",\n  \"email\": \"maria@test.com\",\n  \"tipoClienteId\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT actualizar cliente",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/clientes/{{clienteId}}", "host": ["{{baseUrl}}"], "path": ["clientes", "{{clienteId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Maria Laura\",\n  \"email\": \"marialaura@test.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PATCH estado cliente",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/clientes/{{clienteId}}", "host": ["{{baseUrl}}"], "path": ["clientes", "{{clienteId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"suspendido\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Canchas",
+      "item": [
+        {
+          "name": "GET canchas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/canchas", "host": ["{{baseUrl}}"], "path": ["canchas"] }
+          }
+        },
+        {
+          "name": "GET cancha por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/canchas/{{canchaId}}", "host": ["{{baseUrl}}"], "path": ["canchas", "{{canchaId}}"] }
+          }
+        },
+        {
+          "name": "POST crear cancha",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "if (j.id) pm.environment.set('canchaId', j.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/canchas", "host": ["{{baseUrl}}"], "path": ["canchas"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cancha 1 - Futbol 5\",\n  \"capacidad\": 10,\n  \"precioPorHora\": 8000,\n  \"descripcion\": \"Cesped sintetico, iluminada\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT actualizar cancha",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/canchas/{{canchaId}}", "host": ["{{baseUrl}}"], "path": ["canchas", "{{canchaId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"precioPorHora\": 9500\n}"
+            }
+          }
+        },
+        {
+          "name": "PATCH estado cancha",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/canchas/{{canchaId}}", "host": ["{{baseUrl}}"], "path": ["canchas", "{{canchaId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"mantenimiento\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE cancha",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/canchas/{{canchaId}}", "host": ["{{baseUrl}}"], "path": ["canchas", "{{canchaId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reservas",
+      "item": [
+        {
+          "name": "GET reservas (filtros)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reservas?fecha=&canchaId=&clienteId=&estado=&limite=",
+              "host": ["{{baseUrl}}"],
+              "path": ["reservas"],
+              "query": [
+                { "key": "fecha", "value": "" },
+                { "key": "canchaId", "value": "" },
+                { "key": "clienteId", "value": "" },
+                { "key": "estado", "value": "" },
+                { "key": "limite", "value": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET reserva por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/reservas/{{reservaId}}", "host": ["{{baseUrl}}"], "path": ["reservas", "{{reservaId}}"] }
+          }
+        },
+        {
+          "name": "POST crear reserva",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "if (j.id) pm.environment.set('reservaId', j.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/reservas", "host": ["{{baseUrl}}"], "path": ["reservas"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"canchaId\": {{canchaId}},\n  \"clienteId\": {{clienteId}},\n  \"fecha\": \"2026-07-01\",\n  \"horaInicio\": \"18:00\",\n  \"horaFin\": \"19:00\",\n  \"observaciones\": \"Partido de prueba\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PATCH estado reserva",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/reservas/{{reservaId}}", "host": ["{{baseUrl}}"], "path": ["reservas", "{{reservaId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"cancelada\",\n  \"razonCancelacion\": \"El cliente no puede asistir\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE reserva",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/reservas/{{reservaId}}", "host": ["{{baseUrl}}"], "path": ["reservas", "{{reservaId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Disponibilidad",
+      "item": [
+        {
+          "name": "GET disponibilidad",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/disponibilidad?canchaId={{canchaId}}&fecha=2026-07-01",
+              "host": ["{{baseUrl}}"],
+              "path": ["disponibilidad"],
+              "query": [
+                { "key": "canchaId", "value": "{{canchaId}}" },
+                { "key": "fecha", "value": "2026-07-01" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pagos",
+      "item": [
+        {
+          "name": "GET pagos por reserva (saldo)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pagos?reservaId={{reservaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["pagos"],
+              "query": [{ "key": "reservaId", "value": "{{reservaId}}" }]
+            }
+          }
+        },
+        {
+          "name": "GET pagos (filtros)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pagos?tipoPago=&metodoPago=&limite=",
+              "host": ["{{baseUrl}}"],
+              "path": ["pagos"],
+              "query": [
+                { "key": "tipoPago", "value": "" },
+                { "key": "metodoPago", "value": "" },
+                { "key": "limite", "value": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET pagos estadisticas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/pagos/estadisticas", "host": ["{{baseUrl}}"], "path": ["pagos", "estadisticas"] }
+          }
+        },
+        {
+          "name": "GET pago por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/pagos/{{pagoId}}", "host": ["{{baseUrl}}"], "path": ["pagos", "{{pagoId}}"] }
+          }
+        },
+        {
+          "name": "POST crear pago",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "if (j.id) pm.environment.set('pagoId', j.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/pagos", "host": ["{{baseUrl}}"], "path": ["pagos"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservaId\": {{reservaId}},\n  \"monto\": 2400,\n  \"tipoPago\": \"seña\",\n  \"metodoPago\": \"efectivo\",\n  \"observaciones\": \"Seña del 30%\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

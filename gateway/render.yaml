@@ -1,0 +1,30 @@
+# Blueprint de Render para el gateway.
+# En Render: New → Blueprint → seleccionar este repo. Luego completar en el dashboard
+# las variables marcadas con sync:false (las URLs públicas de los 4 microservicios).
+# El gateway NO usa base de datos.
+services:
+  - type: web
+    name: gateway
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: node dist/main
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # MISMO valor que el JWT_SECRET de api-usuarios
+      - key: JWT_SECRET
+        sync: false
+      # Secreto interno: MISMO valor en los 4 microservicios. Autentica al gateway ante ellos.
+      - key: INTERNAL_SECRET
+        sync: false
+      # URLs públicas de cada microservicio en Render
+      - key: USUARIOS_URL
+        sync: false
+      - key: CANCHAS_URL
+        sync: false
+      - key: TURNOS_URL
+        sync: false
+      - key: PAGOS_URL
+        sync: false

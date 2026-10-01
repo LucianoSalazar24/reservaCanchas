@@ -1,0 +1,1 @@
+export { PagoForm } from './PagoForm'

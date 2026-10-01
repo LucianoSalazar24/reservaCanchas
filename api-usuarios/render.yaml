@@ -1,0 +1,31 @@
+# Blueprint de Render para api-usuarios.
+# En Render: New → Blueprint → seleccionar este repo. Luego completar en el dashboard
+# las variables marcadas con sync:false (son secretas o dependen del despliegue).
+services:
+  - type: web
+    name: api-usuarios
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: node dist/main
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_SSL
+        value: "true"
+      # Secreto interno: MISMO valor en gateway y en los 4 microservicios.
+      - key: INTERNAL_SECRET
+        sync: false
+      # Connection string del Session Pooler de Supabase (IPv4, puerto 5432)
+      - key: DATABASE_URL
+        sync: false
+      # MISMO valor que el JWT_SECRET del gateway
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 24h
+      # URL pública de api-turnos en Render (para derivar estadísticas del cliente)
+      - key: TURNOS_URL
+        sync: false

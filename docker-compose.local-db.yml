@@ -1,0 +1,92 @@
+# Override SOLO para demo local: Postgres dentro de Docker (en vez de la Supabase
+# compartida del equipo) + un proxy "edge" para exponer todo por un único puerto
+# vía ngrok (el plan free de ngrok solo permite 1 endpoint simultáneo).
+#
+# No reemplaza el flujo normal del equipo (docker-compose.yml + .env apuntando a
+# Supabase). Se usa así, combinado con .env.local-db:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.local-db.yml \
+#     --env-file .env.local-db up -d --build
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: canchas_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: canchas_user
+      POSTGRES_PASSWORD: canchas_pass
+      POSTGRES_DB: canchas_db
+    volumes:
+      - canchas_pg_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/1_schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/2_seed.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - canchas_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U canchas_user -d canchas_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api-usuarios:
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_SSL: ${DATABASE_SSL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api-canchas:
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_SSL: ${DATABASE_SSL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api-turnos:
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_SSL: ${DATABASE_SSL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api-usuarios:
+        condition: service_started
+      api-canchas:
+        condition: service_started
+
+  api-pagos:
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_SSL: ${DATABASE_SSL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api-turnos:
+        condition: service_started
+
+  frontend:
+    build:
+      args:
+        VITE_API_URL: ${PUBLIC_URL}
+
+  edge:
+    image: nginx:1.27-alpine
+    container_name: canchas_edge
+    restart: unless-stopped
+    volumes:
+      - ./edge/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8080:8080"
+    networks:
+      - canchas_net
+    depends_on:
+      - gateway
+      - frontend
+
+volumes:
+  canchas_pg_data:

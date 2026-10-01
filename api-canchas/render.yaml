@@ -1,0 +1,27 @@
+# Blueprint de Render para api-canchas.
+# En Render: New → Blueprint → seleccionar este repo. Luego completar en el dashboard
+# las variables marcadas con sync:false.
+services:
+  - type: web
+    name: api-canchas
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: node dist/main
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_SSL
+        value: "true"
+      # Secreto interno: MISMO valor en gateway y en los 4 microservicios.
+      - key: INTERNAL_SECRET
+        sync: false
+      # Connection string del Session Pooler de Supabase (IPv4, puerto 5432)
+      - key: DATABASE_URL
+        sync: false
+      # URL pública de api-turnos en Render (se consulta para bloquear el mantenimiento
+      # de una cancha con reservas activas a futuro)
+      - key: TURNOS_URL
+        sync: false
