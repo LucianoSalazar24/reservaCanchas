@@ -12,6 +12,13 @@ export class GeminiService {
    * tal cual (puede traer `functionCall` y `thoughtSignature`, que hay que reenviar
    * intactos en el turno siguiente) o null ante cualquier falla.
    */
+  constructor() {
+    // Sin esto, una key faltante hace que el chat caiga al modo sin IA sin dejar ningún rastro.
+    if (!this.apiKey) {
+      this.logger.warn('GEMINI_API_KEY vacía: el chatbot responde en modo sin IA (no puede reservar)');
+    }
+  }
+
   async generarConHerramientas(body: {
     systemInstruction: string;
     contents: unknown[];
@@ -21,7 +28,11 @@ export class GeminiService {
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 20000);
+    // Por paso del chat (que puede hacer varios). Configurable porque la latencia de Gemini depende
+    // del modelo y de la región: en el VPS tarda varios segundos hasta para un "hola".
+    const timeoutMs = +(process.env.GEMINI_TIMEOUT_MS ?? 45000);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    const inicio = Date.now();
 
     try {
       const init = {
@@ -49,9 +60,13 @@ export class GeminiService {
 
       const data: any = await res.json();
       const content = data?.candidates?.[0]?.content;
+      // Latencia de cada paso: sirve para ajustar GEMINI_TIMEOUT_MS con datos reales.
+      this.logger.log(`Gemini (${this.model}) respondió en ${Date.now() - inicio} ms`);
       return content?.parts?.length ? content : null;
     } catch (error) {
-      this.logger.warn(`Gemini no disponible, sigo sin IA: ${(error as Error).message}`);
+      this.logger.warn(
+        `Gemini no disponible tras ${Date.now() - inicio} ms (límite ${timeoutMs} ms), sigo sin IA: ${(error as Error).message}`,
+      );
       return null;
     } finally {
       clearTimeout(timeout);

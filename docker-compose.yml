@@ -56,6 +56,8 @@ services:
       TURNOS_URL: http://api-turnos:3003
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       GEMINI_MODEL: ${GEMINI_MODEL}
+      # Límite por paso del chatbot (ms). Gemini puede tardar varios segundos según modelo/región.
+      GEMINI_TIMEOUT_MS: ${GEMINI_TIMEOUT_MS:-45000}
     ports:
       - "3002:3002"
     networks:
