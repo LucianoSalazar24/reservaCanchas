@@ -96,7 +96,52 @@ apuntando a `postgresql://canchas_user:canchas_pass@localhost:5432/canchas_db`.
 
 ---
 
-## 5. Notas
+## 5. CI/CD (GitHub Actions)
+
+- **CI** (`.github/workflows/ci.yml`): en cada push/PR a `master` compila cada servicio y el frontend y
+  valida el compose. No toca el VPS.
+- **Deploy** (`.github/workflows/deploy.yml`): cuando el CI de `master` termina en verde, entra al VPS por
+  SSH y ejecuta `scripts/deploy.sh` con ese commit: árbol limpio → `git merge --ff-only` → migraciones →
+  `docker compose up -d --build` (todos los servicios menos `frontend`) → healthcheck → **rollback
+  automático** al commit anterior si algo no responde. El frontend lo despliega Vercel por su cuenta.
+- Viene **apagado**: no corre hasta definir la variable `DEPLOY_ENABLED=true`.
+
+### Activarlo (una sola vez)
+
+1. **Clave SSH exclusiva para el despliegue** (no tu clave personal), en tu máquina:
+   ```bash
+   ssh-keygen -t ed25519 -f deploy_key -C "github-actions-deploy" -N ""
+   ```
+   Pegá el contenido de `deploy_key.pub` en `~/.ssh/authorized_keys` del usuario del VPS, y **después borrá
+   ambos archivos locales** una vez cargada la privada en GitHub.
+2. **Huella del servidor** (para no aceptar cualquier host): `ssh-keyscan -t ed25519 <IP-del-VPS>`.
+   Comprobá que coincida con la del VPS: `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`.
+3. En GitHub → *Settings → Secrets and variables → Actions*:
+
+   | Tipo | Nombre | Valor |
+   |------|--------|-------|
+   | Secret | `VPS_HOST` | IP pública reservada |
+   | Secret | `VPS_USER` | `ubuntu` |
+   | Secret | `VPS_SSH_KEY` | contenido de `deploy_key` (la **privada**, completa) |
+   | Secret | `VPS_KNOWN_HOSTS` | salida del `ssh-keyscan` |
+   | Variable | `DEPLOY_ENABLED` | `true` |
+   | Variable (opcional) | `VPS_APP_DIR` | carpeta del repo en el VPS (default `~/reservaCanchas`) |
+   | Variable (opcional) | `DEPLOY_SERVICES` | servicios a desplegar (default: todos menos `frontend`) |
+
+4. Opcional: *Settings → Environments → production → Required reviewers* para aprobar cada despliegue a mano.
+5. Probarlo: pestaña *Actions → Deploy → Run workflow*.
+
+### Reglas para que no se rompa
+- **No edites archivos a mano en el VPS** (ej. `docker-compose.yml`): el script se niega a desplegar si hay
+  cambios sin commitear, para no pisarlos. Hacé los cambios por git.
+- **El `.env` del VPS no está en git** y el despliegue no lo toca: variables nuevas se agregan a mano.
+- **Migraciones** (`database/migrations/NNN_*.sql`): se aplican una vez cada una (registro en la tabla
+  `schema_migrations`), y deben ser **idempotentes y aditivas** (ver el encabezado de la 001). Un cambio de
+  esquema = migración nueva **y** actualizar `database/schema.sql`. Si la BD no es el contenedor `postgres`
+  del compose (ej. Supabase), el script lo avisa y hay que aplicarlas a mano.
+- El rollback revierte el código, **no** las migraciones (por eso deben ser aditivas).
+
+## 6. Notas
 
 - `synchronize: false` en todos los servicios: el esquema **no** se crea solo, lo define
   `database/schema.sql`. Si cambian entidades, actualizar también ese script (y, si el VPS ya tiene

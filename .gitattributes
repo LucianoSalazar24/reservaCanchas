@@ -1,0 +1,3 @@
+# Los scripts de shell se ejecutan en Linux (VPS): con CRLF fallan ("\r: command not found").
+# En Windows git tiene core.autocrlf=true, así que se fuerza LF para estos archivos.
+*.sh text eol=lf

@@ -1,0 +1,66 @@
+name: Deploy
+
+# Despliega al VPS por SSH cuando el CI de `master` termina en verde.
+# APAGADO por defecto: no corre hasta que se defina la variable de repo DEPLOY_ENABLED=true
+# (ver docs/DEPLOY.md, sección "CI/CD"). El frontend NO pasa por acá: lo despliega Vercel.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [master]
+  workflow_dispatch: # también se puede lanzar a mano desde la pestaña Actions
+
+# Un solo despliegue a la vez; uno en curso NO se cancela (cortarlo a la mitad dejaría el VPS a medias).
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Desplegar al VPS
+    if: >-
+      ${{ vars.DEPLOY_ENABLED == 'true' && (
+        (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master') ||
+        (github.event_name == 'workflow_run' &&
+         github.event.workflow_run.conclusion == 'success' &&
+         github.event.workflow_run.event == 'push')
+      ) }}
+    runs-on: ubuntu-latest
+    # Permite exigir aprobación manual antes de cada despliegue (Settings -> Environments -> production).
+    environment: production
+    steps:
+      # Se despliega exactamente el commit que el CI aprobó, no "lo último de master".
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Preparar SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # Huella del servidor fijada de antemano: así no se acepta a ciegas cualquier host.
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Desplegar
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          APP_DIR: ${{ vars.VPS_APP_DIR }}
+          DEPLOY_SERVICES: ${{ vars.DEPLOY_SERVICES }}
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          [[ "$APP_DIR" =~ ^[A-Za-z0-9_./~-]*$ ]] || { echo "VPS_APP_DIR inválido"; exit 1; }
+          [[ "$DEPLOY_SERVICES" =~ ^[A-Za-z0-9_\ -]*$ ]] || { echo "DEPLOY_SERVICES inválido"; exit 1; }
+          ssh -i ~/.ssh/deploy_key \
+            -o StrictHostKeyChecking=yes -o BatchMode=yes -o ConnectTimeout=15 \
+            -o ServerAliveInterval=30 \
+            "$VPS_USER@$VPS_HOST" \
+            "APP_DIR='$APP_DIR' DEPLOY_SERVICES='$DEPLOY_SERVICES' bash -s -- '$SHA'" \
+            < scripts/deploy.sh

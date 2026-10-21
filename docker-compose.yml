@@ -177,7 +177,8 @@ services:
       context: ./ppp3-canchas
       args:
         # URL del gateway embebida en el bundle (el navegador la consume vía CORS)
-        VITE_API_URL: http://146.181.24.150:3000
+        # (sale del .env de cada máquina: en el VPS, VITE_API_URL=http://<ip-o-dominio>:3000)
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
     container_name: canchas_frontend
     restart: unless-stopped
     ports:
