@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="fondo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#059669"/>
+      <stop offset="1" stop-color="#064e3b"/>
+    </linearGradient>
+    <!-- Pentágono de radio 20 centrado en el origen, con una punta hacia arriba -->
+    <polygon id="pentagono" points="0,-20 19.02,-6.18 11.76,16.18 -11.76,16.18 -19.02,-6.18"/>
+    <clipPath id="borde-pelota"><circle cx="256" cy="256" r="62"/></clipPath>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#fondo)"/>
+  <g id="contenido">
+    <!-- Cancha -->
+    <g fill="none" stroke="#fff" stroke-width="16" stroke-linejoin="round">
+      <rect x="86" y="146" width="340" height="220" rx="20"/>
+      <line x1="256" y1="146" x2="256" y2="366"/>
+      <rect x="86" y="206" width="48" height="100"/>
+      <rect x="378" y="206" width="48" height="100"/>
+    </g>
+    <!-- Pelota en el centro de la cancha -->
+    <circle cx="256" cy="256" r="62" fill="#fff" stroke="#064e3b" stroke-width="6"/>
+    <g clip-path="url(#borde-pelota)">
+      <g fill="#064e3b">
+        <use xlink:href="#pentagono" href="#pentagono" transform="translate(256 256)"/>
+        <use xlink:href="#pentagono" href="#pentagono" transform="rotate(0 256 256) translate(256 200) scale(0.85)"/>
+        <use xlink:href="#pentagono" href="#pentagono" transform="rotate(72 256 256) translate(256 200) scale(0.85)"/>
+        <use xlink:href="#pentagono" href="#pentagono" transform="rotate(144 256 256) translate(256 200) scale(0.85)"/>
+        <use xlink:href="#pentagono" href="#pentagono" transform="rotate(216 256 256) translate(256 200) scale(0.85)"/>
+        <use xlink:href="#pentagono" href="#pentagono" transform="rotate(288 256 256) translate(256 200) scale(0.85)"/>
+      </g>
+      <g stroke="#064e3b" stroke-width="5" stroke-linecap="round">
+        <line x1="256" y1="236" x2="256" y2="214" transform="rotate(0 256 256)"/>
+        <line x1="256" y1="236" x2="256" y2="214" transform="rotate(72 256 256)"/>
+        <line x1="256" y1="236" x2="256" y2="214" transform="rotate(144 256 256)"/>
+        <line x1="256" y1="236" x2="256" y2="214" transform="rotate(216 256 256)"/>
+        <line x1="256" y1="236" x2="256" y2="214" transform="rotate(288 256 256)"/>
+      </g>
+    </g>
+  </g>
+</svg>

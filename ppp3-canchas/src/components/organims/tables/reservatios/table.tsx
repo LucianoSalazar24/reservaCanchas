@@ -69,7 +69,87 @@ export const Table = ({
     return acciones;
   }
 
+  // "Falta" se muestra igual en la tabla y en las tarjetas.
+  function falta(s: SaldoReserva | undefined) {
+    if (saldosLoading && !s) return <Skeleton className="h-4 w-16" />;
+    if (!s || s.saldoPendiente == null) return "—";
+    return s.saldoPendiente <= 0 ? (
+      <span className="text-emerald-700">Pagado</span>
+    ) : (
+      <span className="text-amber-700">{MoneyUtils.formatear(s.saldoPendiente)}</span>
+    );
+  }
+
   return (
+    <>
+    {/* Celular: una tarjeta por reserva, con las acciones a la vista (la tabla de 9 columnas no entra) */}
+    <div className="sm:hidden flex flex-col gap-3">
+      <button
+        type="button"
+        onClick={onOrdenFecha}
+        className="self-end text-[12.5px] font-semibold text-slate-500 hover:text-brand-700"
+      >
+        Fecha {ordenFecha === "desc" ? "↓ más nuevas primero" : "↑ más viejas primero"}
+      </button>
+      {reservas?.map((r) => {
+        const s = saldos[r.id];
+        const acciones = getAcciones(r);
+        return (
+          <div key={r.id} className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-(--shadow-card)">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-bold text-slate-900 leading-tight truncate">
+                  {r.canchaNombre ?? `Cancha #${r.canchaId}`}
+                </p>
+                <p className="text-[13px] text-slate-600 mt-0.5">
+                  {DateUtils.formatearFecha(r.fecha)} · {DateUtils.formatearHora(r.horaInicio)} – {DateUtils.formatearHora(r.horaFin)}
+                </p>
+              </div>
+              <BadgeReserva estado={r.estado} />
+            </div>
+            <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[12.5px]">
+              <div>
+                <dt className="text-slate-400">Total</dt>
+                <dd className="font-semibold text-brand-700">{MoneyUtils.formatear(r.precioTotal)}</dd>
+              </div>
+              <div>
+                <dt className="text-slate-400">Seña</dt>
+                <dd className="font-semibold text-slate-700">{MoneyUtils.formatear(r.senaRequerida ?? 0)}</dd>
+              </div>
+              <div>
+                <dt className="text-slate-400">Abonado</dt>
+                <dd className="font-semibold text-emerald-700">
+                  {saldosLoading && !s ? <Skeleton className="h-4 w-16" /> : s ? MoneyUtils.formatear(s.totalPagado) : "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-slate-400">Falta</dt>
+                <dd className="font-semibold">{falta(s)}</dd>
+              </div>
+            </dl>
+            {acciones.length > 0 && (
+              <div className="mt-3 flex gap-2">
+                {acciones.map((a) => (
+                  <button
+                    key={a.label}
+                    type="button"
+                    onClick={a.onClick}
+                    className={`btn btn-small flex-1 ${
+                      a.variant === "danger"
+                        ? "btn-outline border-red-200 text-red-600 hover:bg-red-50"
+                        : "btn-primary"
+                    }`}
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+
     <div className="hidden sm:block overflow-x-auto rounded-2xl border border-slate-200/80 shadow-(--shadow-card)">
       <table className="w-full border-collapse bg-white text-[13.5px]">
         <thead className="bg-slate-50 border-b border-slate-200">
@@ -123,19 +203,7 @@ export const Table = ({
                     : s ? MoneyUtils.formatear(s.totalPagado) : "—"}
                 </td>
                 <td className="px-4 py-3.5 border-b border-slate-100/80 align-middle font-semibold">
-                  {saldosLoading && !s ? (
-                    <Skeleton className="h-4 w-16" />
-                  ) : s && s.saldoPendiente != null ? (
-                    s.saldoPendiente <= 0 ? (
-                      <span className="text-emerald-700">Pagado</span>
-                    ) : (
-                      <span className="text-amber-700">
-                        {MoneyUtils.formatear(s.saldoPendiente)}
-                      </span>
-                    )
-                  ) : (
-                    "—"
-                  )}
+                  {falta(s)}
                 </td>
               </tr>
             );
@@ -143,5 +211,6 @@ export const Table = ({
         </tbody>
       </table>
     </div>
+    </>
   );
 };

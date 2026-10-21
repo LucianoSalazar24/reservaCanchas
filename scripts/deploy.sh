@@ -99,7 +99,8 @@ servicio_sano() {
     api-pagos)          docker compose exec -T api-pagos          wget -q -O /dev/null http://127.0.0.1:3004/health ;;
     api-notificaciones) docker compose exec -T api-notificaciones wget -q -O /dev/null http://127.0.0.1:3005/health ;;
     gateway)            docker compose exec -T gateway            wget -q -O /dev/null http://127.0.0.1:3000/canchas ;; # ruta pública
-    *) return 0 ;; # servicio sin chequeo conocido (ej. frontend)
+    frontend)           docker compose exec -T frontend           wget -q -O /dev/null http://127.0.0.1:80/ ;;
+    *) return 0 ;; # servicio sin chequeo conocido
   esac
 }
 
@@ -115,6 +116,14 @@ esperar_salud() {
   done
   return 1
 }
+
+# El frontend incrusta VITE_API_URL en el bundle al construirse: si quedó en localhost (falta en el .env),
+# la web desplegada le pegaría a la máquina de cada usuario. Se corta ANTES de construir nada.
+if [[ " $SERVICES " == *" frontend "* ]] && docker compose config 2>/dev/null | grep -qE 'VITE_API_URL: "?http://(localhost|127\.0\.0\.1)'; then
+  echo "ERROR: se pidió desplegar 'frontend' pero VITE_API_URL apunta a localhost."
+  echo "Agregá VITE_API_URL=http://<ip-o-dominio>:3000 al .env del VPS y reintentá."
+  exit 1
+fi
 
 migrar
 levantar

@@ -126,7 +126,7 @@ apuntando a `postgresql://canchas_user:canchas_pass@localhost:5432/canchas_db`.
    | Secret | `VPS_KNOWN_HOSTS` | salida del `ssh-keyscan` |
    | Variable | `DEPLOY_ENABLED` | `true` |
    | Variable (opcional) | `VPS_APP_DIR` | carpeta del repo en el VPS (default `~/reservaCanchas`) |
-   | Variable (opcional) | `DEPLOY_SERVICES` | servicios a desplegar (default: todos menos `frontend`) |
+   | Variable (opcional) | `DEPLOY_SERVICES` | servicios a desplegar (default: todos menos `frontend`). Si el VPS sirve el frontend: `api-usuarios api-canchas api-turnos api-pagos api-notificaciones gateway frontend` (exige `VITE_API_URL` en el `.env`; si falta, el despliegue se cancela antes de construir) |
 
 4. Opcional: *Settings → Environments → production → Required reviewers* para aprobar cada despliegue a mano.
 5. Probarlo: pestaña *Actions → Deploy → Run workflow*.
@@ -135,6 +135,9 @@ apuntando a `postgresql://canchas_user:canchas_pass@localhost:5432/canchas_db`.
 - **No edites archivos a mano en el VPS** (ej. `docker-compose.yml`): el script se niega a desplegar si hay
   cambios sin commitear, para no pisarlos. Hacé los cambios por git.
 - **El `.env` del VPS no está en git** y el despliegue no lo toca: variables nuevas se agregan a mano.
+- **Si en el VPS se usa el contenedor `frontend`**, el `.env` debe tener `VITE_API_URL=http://<ip-o-dominio>:3000`.
+  Se incrusta en el bundle al construir: sin ella queda `http://localhost:3000` y el navegador del usuario le
+  pega a su propia máquina (error de CORS "loopback"). Cambiarla requiere `docker compose up -d --build frontend`.
 - **Migraciones** (`database/migrations/NNN_*.sql`): se aplican una vez cada una (registro en la tabla
   `schema_migrations`), y deben ser **idempotentes y aditivas** (ver el encabezado de la 001). Un cambio de
   esquema = migración nueva **y** actualizar `database/schema.sql`. Si la BD no es el contenedor `postgres`

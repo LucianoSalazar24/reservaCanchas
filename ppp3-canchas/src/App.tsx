@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context";
-import { ProtectedRoute, ChatCanchasWidget } from "@/components";
+import { ProtectedRoute, ChatCanchasWidget, InstalarAppAviso } from "@/components";
 import { ErrorBoundary, Spinner } from "@/components/atoms";
 const HomePage = lazy(() =>
   import("@/components/organims/home/home").then((m) => ({
@@ -83,6 +83,7 @@ export default function App() {
             </Routes>
           </Suspense>
           <ChatCanchasWidget />
+          <InstalarAppAviso />
         </BrowserRouter>
       </AuthProvider>
     </ErrorBoundary>

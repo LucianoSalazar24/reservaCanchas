@@ -7,6 +7,8 @@ import { LuSend, LuArrowRight, LuBot, LuX, LuMessageCircle } from "react-icons/l
 
 // El chatbot es para clientes buscando cancha: no tiene sentido en /login ni en /admin.
 const RUTAS_OCULTAS = ["/login", "/admin"];
+// Mismo corte que el breakpoint "sm" de Tailwind: debajo, el chat ocupa toda la pantalla.
+const CONSULTA_MOVIL = "(max-width: 639px)";
 
 export function ChatCanchasWidget() {
   const location = useLocation();
@@ -18,6 +20,17 @@ export function ChatCanchasWidget() {
   useEffect(() => {
     if (abierto) finRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [mensajes, enviando, abierto]);
+
+  // En celular el chat tapa toda la pantalla: se bloquea el scroll de la página de atrás
+  // para que el dedo no la mueva mientras se usa el chat.
+  useEffect(() => {
+    if (!abierto || !window.matchMedia(CONSULTA_MOVIL).matches) return;
+    const anterior = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = anterior;
+    };
+  }, [abierto]);
 
   if (RUTAS_OCULTAS.some((r) => location.pathname.startsWith(r))) return null;
 
@@ -32,10 +45,13 @@ export function ChatCanchasWidget() {
     <>
       {abierto && (
         <div
-          className="fixed bottom-24 right-4 sm:right-6 z-50 w-[min(380px,calc(100vw-2rem))] bg-white rounded-2xl border border-slate-200/80 flex flex-col overflow-hidden"
+          role="dialog"
+          aria-label="Asistente de canchas"
+          className="fixed inset-0 h-dvh z-50 bg-white flex flex-col overflow-hidden
+                     sm:inset-auto sm:bottom-24 sm:right-6 sm:h-auto sm:w-[380px] sm:rounded-2xl sm:border sm:border-slate-200/80"
           style={{ boxShadow: "0 20px 45px -10px rgba(15,23,42,0.25)" }}
         >
-          <div className="flex items-center justify-between gap-2.5 px-4 py-3.5 border-b border-slate-100 bg-slate-50">
+          <div className="flex items-center justify-between gap-2.5 px-4 py-3.5 pt-[max(0.875rem,env(safe-area-inset-top))] sm:pt-3.5 border-b border-slate-100 bg-slate-50 shrink-0">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 rounded-full bg-brand-700 flex items-center justify-center text-white flex-shrink-0">
                 <LuBot size={16} />
@@ -47,17 +63,19 @@ export function ChatCanchasWidget() {
                 </p>
               </div>
             </div>
+            {/* Área táctil de 44px (mínimo recomendado para el dedo) */}
             <button
               type="button"
-              className="text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0"
+              className="-m-2 p-2.5 text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0"
               onClick={() => setAbierto(false)}
               aria-label="Cerrar chat"
             >
-              <LuX size={18} />
+              <LuX size={20} />
             </button>
           </div>
 
-          <div className="flex flex-col gap-4 p-4 h-[420px] overflow-y-auto">
+          {/* Celular: ocupa el alto disponible. Escritorio: alto fijo, sin pasarse de la pantalla. */}
+          <div className="flex flex-col gap-4 p-4 flex-1 min-h-0 overflow-y-auto overscroll-contain sm:flex-none sm:h-[420px] sm:max-h-[calc(100dvh-14rem)]">
             {mensajes.map((m, i) => (
               <div key={i} className={`flex flex-col ${m.rol === "usuario" ? "items-end" : "items-start"}`}>
                 <div
@@ -131,7 +149,10 @@ export function ChatCanchasWidget() {
             <div ref={finRef} />
           </div>
 
-          <form onSubmit={handleSubmit} className="flex gap-2 p-3 border-t border-slate-100">
+          <form
+            onSubmit={handleSubmit}
+            className="flex gap-2 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-3 border-t border-slate-100 shrink-0"
+          >
             <input
               className="form-input flex-1"
               placeholder="Ej: fútbol 5 techada en Caballito mañana 20hs"
@@ -139,7 +160,9 @@ export function ChatCanchasWidget() {
               onChange={(e) => setTexto(e.target.value)}
               maxLength={300}
               disabled={enviando}
-              autoFocus
+              enterKeyHint="send"
+              // En celular no se enfoca solo: abriría el teclado y taparía medio chat de entrada.
+              autoFocus={!window.matchMedia(CONSULTA_MOVIL).matches}
             />
             <button type="submit" className="btn btn-primary" disabled={enviando || !texto.trim()}>
               <LuSend size={15} />
@@ -150,7 +173,10 @@ export function ChatCanchasWidget() {
 
       <button
         type="button"
-        className="fixed bottom-5 right-4 sm:right-6 z-50 w-14 h-14 rounded-full bg-brand-700 text-white flex items-center justify-center hover:bg-brand-800 hover:-translate-y-0.5 transition-all"
+        // Con el chat abierto en celular se oculta: el chat ya tiene su botón de cerrar arriba.
+        className={`fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-4 sm:right-6 z-50 w-14 h-14 rounded-full bg-brand-700 text-white items-center justify-center hover:bg-brand-800 hover:-translate-y-0.5 transition-all ${
+          abierto ? "hidden sm:flex" : "flex"
+        }`}
         style={{ boxShadow: "0 10px 25px -5px rgba(4,120,87,0.5)" }}
         onClick={() => setAbierto((v) => !v)}
         aria-label={abierto ? "Cerrar chat" : "Abrir chat de canchas"}

@@ -1,6 +1,6 @@
 import type { Cliente } from "@/types";
 import { EmptyState } from "@/components/molecules";
-import { SkeletonTableRows } from "@/components/atoms";
+import { Skeleton, SkeletonTableRows } from "@/components/atoms";
 import { CLIENTES_HEADERS } from "@/mock";
 import { Table } from "./table";
 
@@ -19,6 +19,12 @@ export const ClientsTable = ({
 }) => {
   if (loading) {
     return (
+      <>
+      <div className="sm:hidden flex flex-col gap-3">
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} className="h-40 rounded-2xl" />
+        ))}
+      </div>
       <div className="hidden sm:block overflow-x-auto rounded-2xl border border-slate-200/80 shadow-(--shadow-card)">
         <table className="w-full border-collapse bg-white text-[13.5px]">
           <thead className="bg-slate-50 border-b border-slate-200">
@@ -33,6 +39,7 @@ export const ClientsTable = ({
           </tbody>
         </table>
       </div>
+      </>
     );
   }
 
