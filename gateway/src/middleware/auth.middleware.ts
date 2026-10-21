@@ -26,14 +26,21 @@ export class AuthMiddleware implements NestMiddleware {
       (r) => r.method === req.method && req.path.startsWith(r.path),
     );
 
-    if (esPublica) return next();
+    // Nunca confiamos en la identidad que venga del cliente: se borra siempre y solo se
+    // vuelve a inyectar si el token verifica (también en rutas públicas, donde el token
+    // es opcional: el chatbot lo usa para saber si puede ofrecer reservar).
+    delete req.headers['x-user-id'];
+    delete req.headers['x-user-email'];
+    delete req.headers['x-user-rol'];
+    delete req.headers['x-cliente-id'];
 
     const authHeader = req.headers['authorization'];
-    if (!authHeader?.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Token no proporcionado');
-    }
+    const tieneToken = !!authHeader?.startsWith('Bearer ');
 
-    const token = authHeader.replace('Bearer ', '');
+    if (esPublica && !tieneToken) return next();
+    if (!tieneToken) throw new UnauthorizedException('Token no proporcionado');
+
+    const token = authHeader!.replace('Bearer ', '');
     try {
       const payload = await this.jwtService.verifyAsync(token, {
         secret: process.env.JWT_SECRET,
@@ -42,15 +49,15 @@ export class AuthMiddleware implements NestMiddleware {
       req.headers['x-user-id'] = String(payload.sub);
       req.headers['x-user-email'] = payload.email;
       req.headers['x-user-rol'] = payload.rol;
-      // cliente_id viene del token verificado; sobreescribimos cualquier valor entrante
-      // para que un cliente no pueda falsificar el header y ver reservas de otro.
+      // cliente_id viene del token verificado (los headers entrantes ya se borraron arriba,
+      // así que un cliente no puede falsificarlo para ver reservas de otro).
       if (payload.cliente_id != null) {
         req.headers['x-cliente-id'] = String(payload.cliente_id);
-      } else {
-        delete req.headers['x-cliente-id'];
       }
       next();
     } catch {
+      // En una ruta pública un token vencido no debe romper la búsqueda: sigue como anónimo.
+      if (esPublica) return next();
       throw new UnauthorizedException('Token inválido o expirado');
     }
   }

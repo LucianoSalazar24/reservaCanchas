@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, MaxLength, Min, IsPositive, IsIn, IsLatitude, IsLongitude } from 'class-validator';
+import { IsEmail, ValidateIf, IsString, IsNumber, IsOptional, MaxLength, Min, IsPositive, IsIn, IsLatitude, IsLongitude } from 'class-validator';
 
 export class UpdateCanchaDto {
   @IsOptional()
@@ -19,6 +19,17 @@ export class UpdateCanchaDto {
   @IsOptional()
   @IsString()
   descripcion?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  zona?: string;
+
+  @IsOptional()
+  @ValidateIf((_, v) => v !== '')
+  @IsEmail()
+  @MaxLength(120)
+  emailContacto?: string;
 
   @IsOptional()
   @IsLatitude()

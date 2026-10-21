@@ -18,6 +18,12 @@ export class Cancha {
   @Column({ type: 'text', nullable: true })
   descripcion: string;
 
+  @Column({ type: 'varchar', length: 60, nullable: true })
+  zona: string | null;
+
+  @Column({ name: 'email_contacto', type: 'varchar', length: 120, nullable: true })
+  emailContacto: string | null;
+
   @Column({
     type: 'enum',
     enum: ['disponible', 'mantenimiento', 'fuera_servicio'],

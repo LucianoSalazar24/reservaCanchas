@@ -49,6 +49,12 @@ INSERT INTO canchas (nombre, capacidad, precio_por_hora, descripcion, latitud, l
   ('Cancha Freire Colegiales',    10, 18000.00, 'Fútbol 5, techada — Gral. Ramón Freire 761, Colegiales', -34.5747, -58.4472)
 ON CONFLICT (nombre) DO NOTHING;
 
+-- Zona de las canchas de ejemplo (idempotente: solo completa las que no la tienen).
+UPDATE canchas SET zona = 'Caballito'     WHERE zona IS NULL AND descripcion ILIKE '%Caballito%';
+UPDATE canchas SET zona = 'Villa Urquiza' WHERE zona IS NULL AND descripcion ILIKE '%Villa Urquiza%';
+UPDATE canchas SET zona = 'Chacarita'     WHERE zona IS NULL AND descripcion ILIKE '%Chacarita%';
+UPDATE canchas SET zona = 'Colegiales'    WHERE zona IS NULL AND descripcion ILIKE '%Colegiales%';
+
 -- ----------------------------------------------------------------------------
 -- 4) Reservas + pagos (idempotente vía guards NOT EXISTS).
 --    Precios = precio_hora × horas × (1 - descuento); seña = 30% del total.

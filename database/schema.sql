@@ -84,6 +84,10 @@ CREATE TABLE IF NOT EXISTS canchas (
   capacidad       INT           NOT NULL DEFAULT 22,
   precio_por_hora DECIMAL(10,2) NOT NULL,
   descripcion     TEXT NULL,
+  -- Barrio/zona (ej. 'Villa Urquiza'). El chatbot filtra por esta columna, no por texto libre.
+  zona            VARCHAR(60) NULL,
+  -- Mail de la cancha: api-notificaciones le avisa cuando se reserva/confirma/cancela un turno.
+  email_contacto  VARCHAR(120) NULL,
   estado          estado_cancha NOT NULL DEFAULT 'disponible',
   -- Nullable: una cancha sin coordenadas simplemente no participa del recomendador por cercanía.
   latitud         DECIMAL(10,7) NULL,
@@ -91,6 +95,10 @@ CREATE TABLE IF NOT EXISTS canchas (
   created_at      TIMESTAMP     NOT NULL DEFAULT now(),
   updated_at      TIMESTAMP     NOT NULL DEFAULT now()
 );
+
+-- Para bases creadas antes de que existiera `zona` (CREATE TABLE IF NOT EXISTS no la agrega).
+ALTER TABLE canchas ADD COLUMN IF NOT EXISTS zona VARCHAR(60) NULL;
+ALTER TABLE canchas ADD COLUMN IF NOT EXISTS email_contacto VARCHAR(120) NULL;
 
 -- updated_at automático (equivalente a ON UPDATE CURRENT_TIMESTAMP de MariaDB)
 CREATE OR REPLACE FUNCTION set_updated_at() RETURNS TRIGGER AS $$
@@ -200,3 +208,9 @@ INSERT INTO canchas (nombre, capacidad, precio_por_hora, descripcion, latitud, l
   ('Complejo Chacarita',          10, 17500.00, 'Fútbol 5, alquiler por hora — zona Chacarita', -34.5858, -58.4552),
   ('Cancha Freire Colegiales',    10, 18000.00, 'Fútbol 5, techada — Gral. Ramón Freire 761, Colegiales', -34.5747, -58.4472)
 ON CONFLICT (nombre) DO NOTHING;
+
+-- Zona de las canchas de ejemplo (idempotente: solo completa las que no la tienen).
+UPDATE canchas SET zona = 'Caballito'     WHERE zona IS NULL AND descripcion ILIKE '%Caballito%';
+UPDATE canchas SET zona = 'Villa Urquiza' WHERE zona IS NULL AND descripcion ILIKE '%Villa Urquiza%';
+UPDATE canchas SET zona = 'Chacarita'     WHERE zona IS NULL AND descripcion ILIKE '%Chacarita%';
+UPDATE canchas SET zona = 'Colegiales'    WHERE zona IS NULL AND descripcion ILIKE '%Colegiales%';

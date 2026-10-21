@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { PublicLayout, CanchaCard, EmptyState, Spinner } from "@/components";
+import { PublicLayout, CanchasListado, CanchasMapa, EmptyState, Spinner } from "@/components";
 import { LuShieldCheck, LuArrowRight } from "react-icons/lu";
 import { useCanchas } from "@/hooks";
 import { CARDS, FEATURES, STEPS } from "@/mock";
@@ -122,6 +122,19 @@ export function HomePage() {
           </div>
         </div>
       </section>
+      <section id="mapa" className="py-24 bg-slate-50">
+        <div className="max-w-6xl mx-auto px-6">
+          <p className="text-center text-brand-600 text-sm font-bold uppercase tracking-widest mb-2">
+            Ubicaciones
+          </p>
+          <h2 className="text-center text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
+            Canchas cerca tuyo
+          </h2>
+          <div className="w-10 h-1 bg-brand-600 rounded-full mx-auto mb-10" />
+          {!loading && !error && <CanchasMapa canchas={canchas} />}
+        </div>
+      </section>
+
       <section id="canchas" className="py-24 bg-white">
         <div className="max-w-6xl mx-auto px-6">
           <p className="text-center text-brand-600 text-sm font-bold uppercase tracking-widest mb-2">
@@ -131,31 +144,24 @@ export function HomePage() {
             Nuestras Canchas
           </h2>
           <div className="w-10 h-1 bg-brand-600 rounded-full mx-auto mb-10" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {loading && (
-              <div className="col-span-full flex justify-center py-12">
-                <Spinner />
-              </div>
-            )}
-            {error && (
-              <p className="text-center text-red-700 py-6 px-8 text-sm bg-red-50 rounded-xl border border-red-200 col-span-full">
-                Error al cargar las canchas.
-              </p>
-            )}
-            {!loading && !error && canchas.length === 0 && (
-              <div className="col-span-full">
-                <EmptyState
-                  icono="🏟️"
-                  titulo="No hay canchas disponibles"
-                  descripcion="En este momento no contamos con canchas activas."
-                />
-              </div>
-            )}
-            {!loading &&
-              canchas.map((c) => (
-                <CanchaCard key={c.id} cancha={c} mode="public" />
-              ))}
-          </div>
+          {loading && (
+            <div className="flex justify-center py-12">
+              <Spinner />
+            </div>
+          )}
+          {error && (
+            <p className="text-center text-red-700 py-6 px-8 text-sm bg-red-50 rounded-xl border border-red-200">
+              Error al cargar las canchas.
+            </p>
+          )}
+          {!loading && !error && canchas.length === 0 && (
+            <EmptyState
+              icono="🏟️"
+              titulo="No hay canchas disponibles"
+              descripcion="En este momento no contamos con canchas activas."
+            />
+          )}
+          {!loading && !error && canchas.length > 0 && <CanchasListado canchas={canchas} />}
         </div>
       </section>
 

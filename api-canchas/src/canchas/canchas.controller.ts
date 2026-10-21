@@ -1,15 +1,19 @@
 import {
   Controller, Get, Post, Put, Patch, Delete,
-  Body, Param, ParseIntPipe, HttpCode, HttpStatus,
+  Body, Param, ParseIntPipe, HttpCode, HttpStatus, Headers,
 } from '@nestjs/common';
 import { CanchasService } from './canchas.service';
 import { CreateCanchaDto } from './dto/create-cancha.dto';
 import { UpdateCanchaDto, UpdateEstadoCanchaDto } from './dto/update-cancha.dto';
 import { ChatCanchasDto } from './dto/chat-canchas.dto';
+import { ChatCanchasService } from './chat-canchas.service';
 
 @Controller('canchas')
 export class CanchasController {
-  constructor(private readonly canchasService: CanchasService) {}
+  constructor(
+    private readonly canchasService: CanchasService,
+    private readonly chatService: ChatCanchasService,
+  ) {}
 
   @Get()
   findAll() {
@@ -17,8 +21,14 @@ export class CanchasController {
   }
 
   @Post('chat')
-  chat(@Body() dto: ChatCanchasDto) {
-    return this.canchasService.chat(dto);
+  chat(
+    @Body() dto: ChatCanchasDto,
+    @Headers('x-user-rol') rol?: string,
+    @Headers('x-cliente-id') clienteId?: string,
+  ) {
+    // Ruta pública: la identidad solo existe si el gateway verificó un token. Únicamente un
+    // cliente (con cliente_id) puede recibir propuestas de reserva.
+    return this.chatService.chat(dto, rol === 'cliente' && clienteId ? +clienteId : undefined);
   }
 
   @Get(':id')

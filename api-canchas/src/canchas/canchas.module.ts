@@ -4,6 +4,7 @@ import { HttpModule } from '@nestjs/axios';
 import { CanchasController } from './canchas.controller';
 import { CanchasService } from './canchas.service';
 import { GeminiService } from './gemini.service';
+import { ChatCanchasService } from './chat-canchas.service';
 import { Cancha } from './entities/cancha.entity';
 
 @Module({
@@ -16,6 +17,6 @@ import { Cancha } from './entities/cancha.entity';
   controllers: [CanchasController],
   // GeminiService no usa el HttpService de arriba (llama a Gemini con fetch directo)
   // para no mandarle el x-internal-secret, que es solo para nuestros microservicios.
-  providers: [CanchasService, GeminiService],
+  providers: [CanchasService, ChatCanchasService, GeminiService],
 })
 export class CanchasModule {}

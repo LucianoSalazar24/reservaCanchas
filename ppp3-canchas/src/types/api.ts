@@ -8,6 +8,8 @@ export interface Cancha {
   precioPorHora: number
   estado: EstadoCancha
   descripcion?: string
+  zona?: string | null
+  emailContacto?: string | null
   latitud?: number | null
   longitud?: number | null
 }
@@ -16,15 +18,31 @@ export interface Cancha {
 export interface ChatCancha {
   id: number
   nombre: string
+  zona?: string | null
+  formato?: number | null
   precioPorHora: number
   descripcion?: string | null
-  distanciaKm: number
-  motivo?: string | null
+  // Solo viene si el usuario compartió su ubicación.
+  distanciaKm?: number
+}
+
+// Reserva ya validada por el backend; el usuario la confirma con un botón (el modelo no la crea).
+export interface ChatAccionReserva {
+  tipo: 'reserva'
+  canchaId: number
+  canchaNombre: string
+  fecha: string
+  horaInicio: string
+  horaFin: string
+  precioEstimado: number
+  // true si al proponerla el usuario no estaba logueado (el chat muestra el login).
+  requiereLogin: boolean
 }
 
 export interface ChatRespuesta {
   respuesta: string
   canchas: ChatCancha[]
+  accionPendiente: ChatAccionReserva | null
   enAlcance: boolean
   generadoConIa: boolean
 }
@@ -32,10 +50,21 @@ export interface ChatRespuesta {
 export interface ChatHistorialItem {
   rol: 'usuario' | 'bot'
   texto: string
+  canchas?: { id: number; nombre: string }[]
+}
+
+// pendiente → confirmando → reservada (creada, falta la seña) → pagando → pagada
+export type EstadoAccionChat = 'pendiente' | 'confirmando' | 'reservada' | 'pagando' | 'pagada' | 'descartada'
+
+export interface ChatReservaCreada {
+  id: number
+  precioTotal: number
+  senaRequerida: number
 }
 
 export interface ChatMensaje extends ChatHistorialItem {
   canchas?: ChatCancha[]
+  accion?: ChatAccionReserva & { estado: EstadoAccionChat; reserva?: ChatReservaCreada }
 }
 
 // Respuesta de GET /reservas/insights (admin) — tendencia semanal de reservas.

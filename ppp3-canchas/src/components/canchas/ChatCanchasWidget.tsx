@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { useChatCanchas } from "@/hooks";
+import { ChatAccionReserva } from "./ChatAccionReserva";
 import { MoneyUtils } from "@/utils";
-import { LuSend, LuSparkles, LuArrowRight, LuBot, LuX, LuMessageCircle } from "react-icons/lu";
+import { LuSend, LuArrowRight, LuBot, LuX, LuMessageCircle } from "react-icons/lu";
 
 // El chatbot es para clientes buscando cancha: no tiene sentido en /login ni en /admin.
 const RUTAS_OCULTAS = ["/login", "/admin"];
 
 export function ChatCanchasWidget() {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { mensajes, enviando, enviar } = useChatCanchas();
+  const { mensajes, enviando, enviar, iniciarSesion, confirmarReserva, descartarReserva, pagarSena } = useChatCanchas();
   const [abierto, setAbierto] = useState(false);
   const [texto, setTexto] = useState("");
   const finRef = useRef<HTMLDivElement>(null);
@@ -79,14 +79,15 @@ export function ChatCanchasWidget() {
                       >
                         <div className="flex justify-between items-start gap-2">
                           <span className="font-bold text-slate-900 text-[13px] leading-tight">{c.nombre}</span>
-                          <span className="shrink-0 text-[10.5px] font-semibold text-brand-700 bg-brand-50 rounded-full px-2 py-0.5">
-                            {c.distanciaKm} km
-                          </span>
+                          {c.distanciaKm != null && (
+                            <span className="shrink-0 text-[10.5px] font-semibold text-brand-700 bg-brand-50 rounded-full px-2 py-0.5">
+                              {c.distanciaKm} km
+                            </span>
+                          )}
                         </div>
-                        {c.motivo && (
-                          <p className="text-[12px] text-emerald-700 bg-emerald-50 rounded-lg px-2.5 py-1.5 flex gap-1.5 items-start">
-                            <LuSparkles size={12} className="shrink-0 mt-0.5" />
-                            {c.motivo}
+                        {(c.zona || c.formato) && (
+                          <p className="text-[12px] text-slate-500">
+                            {[c.formato && `Fútbol ${c.formato}`, c.zona].filter(Boolean).join(" · ")}
                           </p>
                         )}
                         <div className="flex items-center justify-between mt-0.5">
@@ -97,10 +98,8 @@ export function ChatCanchasWidget() {
                           <button
                             type="button"
                             className="btn btn-outline text-[11.5px] py-1"
-                            onClick={() => {
-                              setAbierto(false);
-                              navigate("/reservar");
-                            }}
+                            onClick={() => enviar(`Quiero reservar ${c.nombre}`)}
+                            disabled={enviando}
                           >
                             Reservar <LuArrowRight size={12} />
                           </button>
@@ -108,6 +107,16 @@ export function ChatCanchasWidget() {
                       </div>
                     ))}
                   </div>
+                )}
+
+                {m.accion && (
+                  <ChatAccionReserva
+                    accion={m.accion}
+                    onLogin={iniciarSesion}
+                    onConfirmar={() => confirmarReserva(i)}
+                    onDescartar={() => descartarReserva(i)}
+                    onPagar={(metodo) => pagarSena(i, metodo)}
+                  />
                 )}
               </div>
             ))}
@@ -125,7 +134,7 @@ export function ChatCanchasWidget() {
           <form onSubmit={handleSubmit} className="flex gap-2 p-3 border-t border-slate-100">
             <input
               className="form-input flex-1"
-              placeholder="Ej: cancha de fútbol 5 techada cerca mío"
+              placeholder="Ej: fútbol 5 techada en Caballito mañana 20hs"
               value={texto}
               onChange={(e) => setTexto(e.target.value)}
               maxLength={300}

@@ -35,7 +35,7 @@ microservicios esperan a que `postgres` esté `healthy` antes de arrancar.
 
 - Frontend: http://localhost:5173
 - Gateway: http://localhost:3000
-- Health check de cada microservicio: `GET /health` en su puerto (3001–3004)
+- Health check de cada microservicio: `GET /health` en su puerto (3001–3005)
 
 Si preferís correr los servicios sin contenedor (`npm run start:dev`), levantá igual el contenedor
 `postgres` del compose (`docker compose up -d postgres`) y copiá el `.env.template` de cada servicio
@@ -54,7 +54,7 @@ apuntando a `postgresql://canchas_user:canchas_pass@localhost:5432/canchas_db`.
 3. Asignarle una **Reserved Public IP** (no la efímera por defecto), para que la IP no cambie si se
    reinicia la instancia. Esa IP es la que va a usar el frontend para hablarle al gateway.
 4. Abrir en la lista de seguridad / *Security List* de la VCN los puertos necesarios: `22` (SSH) y
-   `3000` (gateway). Los puertos `3001`–`3004` y `5432` **no** deberían quedar expuestos a internet
+   `3000` (gateway). Los puertos `3001`–`3005` y `5432` **no** deberían quedar expuestos a internet
    (el docker-compose ya los publica solo dentro de la red del host; si se quiere restringir más,
    sacarles el mapeo de puertos en el compose y dejar que se comuniquen solo por `canchas_net`).
 5. En la instancia:
@@ -104,3 +104,11 @@ apuntando a `postgresql://canchas_user:canchas_pass@localhost:5432/canchas_db`.
 - El volumen `canchas_pgdata` persiste los datos de Postgres entre `docker compose up`/`down`; solo se
   pierde con `docker compose down -v` o borrando el volumen a mano.
 - Para actualizar el VPS con cambios nuevos: `git pull && docker compose up -d --build`.
+- **Migración de columnas nuevas en una BD ya creada** (`canchas.zona` y `canchas.email_contacto`; el
+  volumen no recarga `schema.sql`): `docker compose exec postgres psql -U canchas_user -d canchas_db -c
+  "ALTER TABLE canchas ADD COLUMN IF NOT EXISTS zona VARCHAR(60); ALTER TABLE canchas ADD COLUMN IF NOT EXISTS email_contacto VARCHAR(120);"`
+  (y los `UPDATE ... SET zona` del final de `database/seed.sql`).
+- **Mails (api-notificaciones):** completar `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` y `MAIL_FROM`
+  en el `.env` raíz con un SMTP gratuito (Gmail con contraseña de aplicación, o Brevo; ver `.env.template`)
+  y poner `FRONTEND_URL` con la URL pública de Vercel. Sin `SMTP_HOST` el servicio no envía nada (solo loguea).
+  Cada cancha necesita su *Email de contacto* (panel admin → Canchas) para recibir el aviso.

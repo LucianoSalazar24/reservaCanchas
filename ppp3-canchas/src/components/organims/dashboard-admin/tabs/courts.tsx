@@ -13,6 +13,8 @@ interface FormCancha {
   capacidad: number
   precioPorHora: number
   descripcion: string
+  zona: string
+  emailContacto: string
 }
 
 export function CanchasTab() {
@@ -47,6 +49,8 @@ export function CanchasTab() {
       capacidad: cancha.capacidad,
       precioPorHora: cancha.precioPorHora,
       descripcion: cancha.descripcion ?? '',
+      zona: cancha.zona ?? '',
+      emailContacto: cancha.emailContacto ?? '',
     })
     setFormErrors(FORM_CANCHA_ERRORS_EMPTY)
     setFormAbierto(true)
@@ -100,6 +104,8 @@ export function CanchasTab() {
         capacidad: form.capacidad,
         precioPorHora: form.precioPorHora,
         descripcion: form.descripcion.trim() || undefined,
+        zona: form.zona.trim() || undefined,
+        emailContacto: form.emailContacto.trim(),
       }
       if (editando) {
         await CanchasService.actualizar(editando.id, datos)
@@ -231,6 +237,28 @@ export function CanchasTab() {
               onChange={e => { setForm({ ...form, precioPorHora: Number(e.target.value) }); setFormErrors(v => ({ ...v, precioPorHora: '' })) }}
             />
             <FieldError msg={formErrors.precioPorHora} />
+          </div>
+          <div className="mb-5">
+            <label className="block mb-1.5 text-[13px] font-semibold text-slate-800 tracking-[0.01em]">Zona / barrio</label>
+            <input
+              className="form-input"
+              maxLength={60}
+              placeholder="Ej: Villa Urquiza"
+              value={form.zona}
+              onChange={e => setForm({ ...form, zona: e.target.value })}
+            />
+          </div>
+          <div className="mb-5">
+            <label className="block mb-1.5 text-[13px] font-semibold text-slate-800 tracking-[0.01em]">Email de contacto de la cancha</label>
+            <input
+              type="email"
+              className="form-input"
+              maxLength={120}
+              placeholder="reservas@micancha.com"
+              value={form.emailContacto}
+              onChange={e => setForm({ ...form, emailContacto: e.target.value })}
+            />
+            <p className="mt-1 text-[12px] text-slate-400">Recibe un aviso cuando alguien reserva, confirma o cancela.</p>
           </div>
           <div className="mb-5">
             <label className="block mb-1.5 text-[13px] font-semibold text-slate-800 tracking-[0.01em]">Descripción</label>

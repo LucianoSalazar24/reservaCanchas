@@ -52,6 +52,8 @@ services:
       DATABASE_SSL: ${DATABASE_SSL}
       INTERNAL_SECRET: ${INTERNAL_SECRET}
       NODE_ENV: development
+      # Disponibilidad para el chatbot y verificación de reservas activas (dueño: api-turnos).
+      TURNOS_URL: http://api-turnos:3003
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       GEMINI_MODEL: ${GEMINI_MODEL}
     ports:
@@ -74,6 +76,8 @@ services:
       NODE_ENV: development
       USUARIOS_URL: http://api-usuarios:3001
       CANCHAS_URL: http://api-canchas:3002
+      # Avisos por mail al reservar/confirmar/cancelar (fire-and-forget: si está caído, la reserva igual se crea).
+      NOTIFICACIONES_URL: http://api-notificaciones:3005
       SENA_PORCENTAJE_DEFAULT: 30
       HORAS_ANTICIPACION_MIN: 2
       DURACION_MAXIMA_HORAS: 3
@@ -111,6 +115,39 @@ services:
         condition: service_healthy
       api-turnos:
         condition: service_started
+
+  # Manda los mails (SMTP gratuito). Sin base de datos y sin ruta en el gateway: solo lo llama api-turnos.
+  api-notificaciones:
+    build: ./api-notificaciones
+    container_name: canchas_api_notificaciones
+    restart: unless-stopped
+    environment:
+      PORT: 3005
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      NODE_ENV: development
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+    ports:
+      - "3005:3005"
+    networks:
+      - canchas_net
+
+  # Bandeja de mails de PRUEBA (solo desarrollo): `docker compose --profile dev up -d mailpit`
+  # y SMTP_HOST=mailpit SMTP_PORT=1025 en el .env. Los mails se ven en http://localhost:8025.
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: canchas_mailpit
+    profiles: ["dev"]
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+    networks:
+      - canchas_net
 
   gateway:
     build: ./gateway

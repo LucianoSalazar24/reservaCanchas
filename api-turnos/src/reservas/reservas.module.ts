@@ -4,6 +4,7 @@ import { HttpModule } from '@nestjs/axios';
 import { ReservasController } from './reservas.controller';
 import { ReservasService } from './reservas.service';
 import { GeminiService } from './gemini.service';
+import { NotificacionesClient } from './notificaciones.client';
 import { Reserva } from './entities/reserva.entity';
 
 @Module({
@@ -16,7 +17,7 @@ import { Reserva } from './entities/reserva.entity';
   controllers: [ReservasController],
   // GeminiService no usa el HttpService de arriba (llama a Gemini con fetch directo)
   // para no mandarle el x-internal-secret, que es solo para nuestros microservicios.
-  providers: [ReservasService, GeminiService],
+  providers: [ReservasService, GeminiService, NotificacionesClient],
   exports: [ReservasService],
 })
 export class ReservasModule {}

@@ -15,6 +15,8 @@ export const FORM_CANCHA_VACIO = {
   capacidad: 22,
   precioPorHora: 0,
   descripcion: "",
+  zona: "",
+  emailContacto: "",
 };
 
 export const FORM_CANCHA_ERRORS_EMPTY = {

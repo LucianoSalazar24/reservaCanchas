@@ -8,12 +8,11 @@ export const CanchasService = {
   },
 
   async chat(
-    lat: number,
-    lng: number,
+    coords: { lat: number; lng: number } | null,
     mensaje: string,
     historial: ChatHistorialItem[] = [],
   ): Promise<ChatRespuesta> {
-    const { data } = await api.post("/canchas/chat", { lat, lng, mensaje, historial });
+    const { data } = await api.post("/canchas/chat", { ...coords, mensaje, historial });
     return data;
   },
 

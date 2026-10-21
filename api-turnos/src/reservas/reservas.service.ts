@@ -10,6 +10,7 @@ import { Reserva } from './entities/reserva.entity';
 import { CreateReservaDto } from './dto/create-reserva.dto';
 import { UpdateEstadoReservaDto } from './dto/update-reserva.dto';
 import { GeminiService } from './gemini.service';
+import { NotificacionesClient } from './notificaciones.client';
 
 const HORA_APERTURA = '08:00';
 const HORA_CIERRE = '23:00';
@@ -29,6 +30,7 @@ export class ReservasService {
     private dataSource: DataSource,
     private httpService: HttpService,
     private geminiService: GeminiService,
+    private notificaciones: NotificacionesClient,
   ) {}
 
   async findAll(filtros: {
@@ -94,6 +96,7 @@ export class ReservasService {
       dto.horaFin,
     );
 
+    let guardada: Reserva;
     try {
       const reserva = this.reservaRepo.create({
         canchaId: dto.canchaId,
@@ -106,10 +109,13 @@ export class ReservasService {
         senaRequerida,
         observaciones: dto.observaciones,
       });
-      return await this.reservaRepo.save(reserva);
+      guardada = await this.reservaRepo.save(reserva);
     } catch (error) {
       throw new InternalServerErrorException('Error al crear la reserva');
     }
+    // Fuera del try: un fallo al avisar no puede convertirse en "Error al crear la reserva".
+    this.notificaciones.notificar('creada', guardada);
+    return guardada;
   }
 
   async updateEstado(id: number, dto: UpdateEstadoReservaDto, ownerClienteId?: number) {
@@ -122,8 +128,15 @@ export class ReservasService {
 
     // Los efectos sobre el cliente (no_shows, total_reservas) NO se sincronizan: se derivan
     // de las reservas vía GET /clientes/:id/estadisticas (api-usuarios consulta api-turnos).
+    const estadoAnterior = reserva.estado;
     reserva.estado = dto.estado;
-    return this.reservaRepo.save(reserva);
+    const guardada = await this.reservaRepo.save(reserva);
+
+    // Solo se avisa si el estado cambió de verdad (un PATCH repetido no manda mails de nuevo).
+    if (estadoAnterior !== dto.estado && (dto.estado === 'confirmada' || dto.estado === 'cancelada')) {
+      this.notificaciones.notificar(dto.estado, guardada);
+    }
+    return guardada;
   }
 
   async remove(id: number, ownerClienteId?: number) {
